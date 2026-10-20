@@ -60,15 +60,15 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({ invoice, settings })
           {/* Left Column: Big VKS Logo with Lord Murugan positioned on top-left of VKS */}
           <div className="relative w-[280px] flex-shrink-0 flex items-center justify-start pt-2 pb-1">
             {/* Lord Murugan in marked top-left spot */}
-            {showMurugan && muruganUrl && (
-              <div className="absolute top-0 left-1 z-10 pointer-events-none">
+            {/* {showMurugan && muruganUrl && (
+              <div className="absolute top-0 left-0 z-10 bottom-2 pointer-events-none">
                 <img
                   src={muruganUrl}
                   alt="Lord Murugan"
-                  className="h-18 w-auto max-w-[80px] object-contain filter grayscale"
+                  className="h-10 w-auto max-w-[30] object-contain filter grayscale"
                 />
               </div>
-            )}
+            )} */}
 
             {/* BIG VKS Logo (Shifted a little left and enlarged) */}
             {showLogo && logoUrl ? (
@@ -240,8 +240,7 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({ invoice, settings })
                 <th className="border-r border-black py-1 px-1 w-20 text-right font-bold">Qty / Wt</th>
                 <th className="border-r border-black py-1 px-1 w-14 text-center font-bold">Unit</th>
                 <th className="border-r border-black py-1 px-1 w-20 text-right font-bold">Rate (₹)</th>
-                <th className="border-r border-black py-1 px-1 w-16 text-center font-bold">Tax %</th>
-                <th className="py-1 px-2 w-24 text-right font-bold">Amount (₹)</th>
+                <th className="py-1 px-2 w-28 text-right font-bold">Amount (₹)</th>
               </tr>
             </thead>
             <tbody>
@@ -265,11 +264,8 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({ invoice, settings })
                   <td className="border-r border-black py-1.5 px-1 text-right tabular-nums">
                     {Number(it.unit_price).toFixed(2)}
                   </td>
-                  <td className="border-r border-black py-1.5 px-1 text-center tabular-nums">
-                    {it.tax_rate}%
-                  </td>
                   <td className="py-1.5 px-2 text-right font-semibold tabular-nums text-black">
-                    {Number(it.line_total).toFixed(2)}
+                    {Number(it.taxable_amount ?? (Number(it.quantity) * Number(it.unit_price))).toFixed(2)}
                   </td>
                 </tr>
               ))}
@@ -278,7 +274,6 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({ invoice, settings })
               {invoice.items.length < 5 && (
                 Array.from({ length: 5 - invoice.items.length }).map((_, i) => (
                   <tr key={`pad-${i}`} className="border-b border-neutral-200 h-6">
-                    <td className="border-r border-black">&nbsp;</td>
                     <td className="border-r border-black">&nbsp;</td>
                     <td className="border-r border-black">&nbsp;</td>
                     <td className="border-r border-black">&nbsp;</td>
@@ -298,7 +293,7 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({ invoice, settings })
                 <td className="border-r border-black py-1 px-1 text-right tabular-nums">
                   {totalQuantity.toFixed(2)}
                 </td>
-                <td colSpan={3} className="border-r border-black py-1 px-1 text-right uppercase">
+                <td colSpan={2} className="border-r border-black py-1 px-1 text-right uppercase">
                   Items Subtotal:
                 </td>
                 <td className="py-1 px-2 text-right tabular-nums text-black">
@@ -318,7 +313,7 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({ invoice, settings })
               {/* Tax Summary Table (Left 58%) */}
               <td className="border-r border-black p-2.5 w-[58%] align-top">
                 <div className="font-bold text-[10px] uppercase tracking-wide bg-neutral-100 px-2 py-1 border border-black mb-1.5">
-                  GST Tax Summary Breakdown:
+                  GST Tax Summary :
                 </div>
                 <table className="w-full border border-black text-[9.5px] border-collapse">
                   <thead>
@@ -493,7 +488,7 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({ invoice, settings })
                     )}
                   </div>
                   <div>
-                    <span className="text-neutral-700 font-semibold">RTGS / NEFT / IFSC: </span>
+                    <span className="text-neutral-700 font-semibold">IFSC: </span>
                     <strong className="font-mono font-black text-xs tracking-wider text-black">{bankSnap.ifsc_code}</strong>
                   </div>
                 </div>

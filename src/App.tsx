@@ -108,13 +108,13 @@ export function App() {
     return saved;
   };
 
-  const handleFinalizeInvoice = async (invoiceId: string): Promise<Invoice> => {
-    const finalized = await dataService.finalizeInvoice(invoiceId);
+  const handleFinalizeInvoice = async (invoiceId: string, customInvoiceNumber?: string): Promise<Invoice> => {
+    const finalized = await dataService.finalizeInvoice(invoiceId, customInvoiceNumber);
     await loadData();
     setEditingInvoice(null);
     setCurrentTab('invoice-history');
     setViewingInvoice(finalized);
-    setActionSuccessToast(`Invoice ${finalized.invoice_number} finalized & allocated successfully!`);
+    setActionSuccessToast(`Invoice ${finalized.invoice_number} finalized successfully!`);
     setTimeout(() => setActionSuccessToast(null), 6000);
     return finalized;
   };

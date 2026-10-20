@@ -27,7 +27,7 @@ interface InvoiceFormProps {
   products: Product[];
   settings: BusinessSettings;
   onSaveDraft: (invoice: Partial<Invoice>, openPreview?: boolean) => Promise<Invoice>;
-  onFinalize: (invoiceId: string) => Promise<Invoice>;
+  onFinalize: (invoiceId: string, customInvoiceNumber?: string) => Promise<Invoice>;
   onCancel: () => void;
   onPreview: (invoice: Invoice) => void;
 }
@@ -44,6 +44,20 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
 }) => {
   const isEditing = Boolean(initialInvoice);
   const isFinalized = initialInvoice?.invoice_status === 'FINALIZED';
+
+  // Computed default sequential invoice number preview
+  const nextSeqPadded = String(settings.next_sequence_number || 1).padStart(3, '0');
+  const defaultAutoNumber = settings.invoice_number_format
+    .replace('{PREFIX}', settings.invoice_prefix)
+    .replace('{YEAR}', new Date().getFullYear().toString())
+    .replace('{SEQ}', nextSeqPadded);
+
+  const [invoiceNumberMode, setInvoiceNumberMode] = useState<'auto' | 'manual'>('auto');
+  const [customInvoiceNumber, setCustomInvoiceNumber] = useState(
+    initialInvoice?.invoice_number || defaultAutoNumber
+  );
+  const [showFinalizeModal, setShowFinalizeModal] = useState(false);
+  const [finalizeModalError, setFinalizeModalError] = useState('');
 
   // Invoice header state
   const [invoiceDate, setInvoiceDate] = useState(
@@ -299,8 +313,8 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
     }
   };
 
-  // Handle Finalize
-  const handleFinalizeClick = async () => {
+  // Handle Finalize - open allocation modal to ask for manual or generated number
+  const handleFinalizeClick = () => {
     setErrorMsg('');
     if (!customerName.trim()) {
       setErrorMsg('Please specify Customer Name before finalizing invoice.');
@@ -312,26 +326,32 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
       return;
     }
 
-    if (
-      !window.confirm(
-        'Are you sure you want to FINALIZE this invoice?\n\nFinalized invoices receive an official immutable invoice number and cannot be deleted.'
-      )
-    ) {
-      return;
-    }
+    setFinalizeModalError('');
+    setShowFinalizeModal(true);
+  };
 
+  // Execute Finalization with selected mode (auto or manual)
+  const executeFinalize = async () => {
     try {
+      if (invoiceNumberMode === 'manual' && !customInvoiceNumber.trim()) {
+        setFinalizeModalError('Please enter a manual invoice number, or select Auto-Generate.');
+        return;
+      }
+
       setIsSaving(true);
       setErrorMsg('');
+      setFinalizeModalError('');
 
       // First save draft state quietly without opening draft preview modal
       const payload = buildInvoicePayload();
       const saved = await onSaveDraft(payload, false);
       if (saved && saved.id) {
-        await onFinalize(saved.id);
+        const manualNum = invoiceNumberMode === 'manual' ? customInvoiceNumber.trim() : undefined;
+        await onFinalize(saved.id, manualNum);
+        setShowFinalizeModal(false);
       }
     } catch (err: any) {
-      setErrorMsg(err.message || 'Error finalizing invoice.');
+      setFinalizeModalError(err.message || 'Error finalizing invoice.');
     } finally {
       setIsSaving(false);
     }
@@ -344,7 +364,11 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
     const previewInvoice: Invoice = {
       ...payload,
       id: payload.id || 'preview-temp',
-      invoice_number: initialInvoice?.invoice_number || null,
+      invoice_number:
+        initialInvoice?.invoice_number ||
+        (invoiceNumberMode === 'manual' && customInvoiceNumber.trim()
+          ? customInvoiceNumber.trim()
+          : defaultAutoNumber),
       invoice_status: initialInvoice?.invoice_status || 'DRAFT',
       payment_status: initialInvoice?.payment_status || 'UNPAID',
       amount_paid: initialInvoice?.amount_paid || 0,
@@ -470,21 +494,74 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
 
           <div className="space-y-3 text-xs">
             <div>
-              <label className="block text-[11px] font-semibold text-[#6C5D64] mb-1">
-                Invoice Number
-              </label>
-              <input
-                type="text"
-                disabled
-                value={
-                  initialInvoice?.invoice_number ||
-                  `[Auto: ${settings.invoice_prefix}/${new Date().getFullYear()}/00${settings.next_sequence_number}]`
-                }
-                className="w-full px-3 py-1.5 bg-[#FAF6F5] border border-[#E8DFDC] rounded text-[#6C5D64] font-mono font-medium text-xs cursor-not-allowed"
-              />
-              <span className="text-[10px] text-neutral-400 mt-0.5 block">
-                Allocated upon finalization via transactional counter
-              </span>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-[11px] font-semibold text-[#6C5D64]">
+                  Invoice Number
+                </label>
+                {!isFinalized && (
+                  <div className="flex items-center gap-1 bg-[#FAF6F5] p-0.5 rounded border border-[#E8DFDC]">
+                    <button
+                      type="button"
+                      onClick={() => setInvoiceNumberMode('auto')}
+                      className={`px-2 py-0.5 rounded text-[10px] font-medium transition-all ${
+                        invoiceNumberMode === 'auto'
+                          ? 'bg-[#702C3B] text-white shadow-xs font-semibold'
+                          : 'text-[#6C5D64] hover:text-[#30252A]'
+                      }`}
+                    >
+                      Auto
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setInvoiceNumberMode('manual');
+                        if (!customInvoiceNumber) setCustomInvoiceNumber(defaultAutoNumber);
+                      }}
+                      className={`px-2 py-0.5 rounded text-[10px] font-medium transition-all ${
+                        invoiceNumberMode === 'manual'
+                          ? 'bg-[#702C3B] text-white shadow-xs font-semibold'
+                          : 'text-[#6C5D64] hover:text-[#30252A]'
+                      }`}
+                    >
+                      Manual
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {isFinalized ? (
+                <input
+                  type="text"
+                  disabled
+                  value={initialInvoice?.invoice_number || ''}
+                  className="w-full px-3 py-1.5 bg-[#FAF6F5] border border-[#E8DFDC] rounded text-[#30252A] font-mono font-bold text-xs cursor-not-allowed"
+                />
+              ) : invoiceNumberMode === 'manual' ? (
+                <div>
+                  <input
+                    type="text"
+                    value={customInvoiceNumber}
+                    onChange={(e) => setCustomInvoiceNumber(e.target.value)}
+                    placeholder={`e.g. ${defaultAutoNumber} or custom bill no`}
+                    className="w-full px-3 py-1.5 bg-white border border-[#702C3B] rounded text-[#30252A] font-mono font-semibold text-xs focus:outline-none focus:ring-1 focus:ring-[#D4AE77]"
+                  />
+                  <span className="text-[10px] text-[#702C3B] mt-0.5 block font-medium">
+                    Manual bill number will be saved upon finalization
+                  </span>
+                </div>
+              ) : (
+                <div>
+                  <input
+                    type="text"
+                    disabled
+                    value={`[Auto: ${defaultAutoNumber}]`}
+                    className="w-full px-3 py-1.5 bg-[#FAF6F5] border border-[#E8DFDC] rounded text-[#6C5D64] font-mono font-medium text-xs cursor-not-allowed"
+                  />
+                  <span className="text-[10px] text-[#6C5D64] mt-0.5 block">
+                    Auto-generated on finalization via sequence counter
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-2">
@@ -1070,6 +1147,143 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
           </div>
         </div>
       </div>
+
+      {/* ================================================================= */}
+      {/* FINALIZATION ALLOCATION MODAL (AUTO VS MANUAL BILL NUMBER)        */}
+      {/* ================================================================= */}
+      {showFinalizeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white rounded-xl shadow-2xl border border-[#E8DFDC] max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-150">
+            <div className="h-1.5 bg-[#702C3B]" />
+
+            <div className="p-6">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="p-2.5 bg-[#FAF6F5] rounded-lg border border-[#E8DFDC] text-[#702C3B]">
+                  <CheckCircle size={22} className="text-[#702C3B]" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-[#30252A] font-serif">
+                    Finalize Commercial Invoice
+                  </h3>
+                  <p className="text-xs text-[#6C5D64] mt-0.5">
+                    Choose how the official bill / invoice number will be assigned:
+                  </p>
+                </div>
+              </div>
+
+              {finalizeModalError && (
+                <div className="mb-4 p-2.5 bg-[#FCECEE] border border-[#F4BEC5] text-[#B82A3A] rounded text-xs flex items-center gap-1.5">
+                  <AlertTriangle size={14} className="flex-shrink-0" />
+                  <span>{finalizeModalError}</span>
+                </div>
+              )}
+
+              <div className="space-y-3 mb-5 text-xs">
+                {/* Option 1: Auto-generate */}
+                <label
+                  onClick={() => setInvoiceNumberMode('auto')}
+                  className={`flex items-start gap-3 p-3.5 rounded-lg border cursor-pointer transition-all ${
+                    invoiceNumberMode === 'auto'
+                      ? 'border-[#702C3B] bg-[#FAF6F5] shadow-xs'
+                      : 'border-[#E8DFDC] hover:border-neutral-300'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="modal_invoice_mode"
+                    checked={invoiceNumberMode === 'auto'}
+                    onChange={() => setInvoiceNumberMode('auto')}
+                    className="mt-0.5 accent-[#702C3B]"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-[#30252A]">
+                        Auto-Generate Sequential Number
+                      </span>
+                      <span className="font-mono text-[11px] font-bold text-[#702C3B] bg-white px-2 py-0.5 rounded border border-[#E8DFDC]">
+                        {defaultAutoNumber}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[#6C5D64] mt-1">
+                      System automatically allocates the next sequential number and advances the counter.
+                    </p>
+                  </div>
+                </label>
+
+                {/* Option 2: Enter Manually */}
+                <label
+                  onClick={() => setInvoiceNumberMode('manual')}
+                  className={`flex items-start gap-3 p-3.5 rounded-lg border cursor-pointer transition-all ${
+                    invoiceNumberMode === 'manual'
+                      ? 'border-[#702C3B] bg-[#FAF6F5] shadow-xs'
+                      : 'border-[#E8DFDC] hover:border-neutral-300'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="modal_invoice_mode"
+                    checked={invoiceNumberMode === 'manual'}
+                    onChange={() => setInvoiceNumberMode('manual')}
+                    className="mt-0.5 accent-[#702C3B]"
+                  />
+                  <div className="flex-1">
+                    <span className="font-bold text-[#30252A]">
+                      Enter Manually (Custom Bill No)
+                    </span>
+                    <p className="text-[11px] text-[#6C5D64] mt-0.5">
+                      Type your own existing bill number or custom format.
+                    </p>
+
+                    {invoiceNumberMode === 'manual' && (
+                      <div className="mt-2.5">
+                        <input
+                          type="text"
+                          autoFocus
+                          value={customInvoiceNumber}
+                          onChange={(e) => {
+                            setCustomInvoiceNumber(e.target.value);
+                            setFinalizeModalError('');
+                          }}
+                          placeholder={`e.g. ${defaultAutoNumber} or custom bill no`}
+                          className="w-full px-3 py-2 bg-white border border-[#702C3B] rounded font-mono font-bold text-xs text-[#30252A] focus:outline-none focus:ring-1 focus:ring-[#D4AE77]"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </label>
+              </div>
+
+              <div className="p-2.5 bg-[#FAF6F5] rounded border border-[#E8DFDC] mb-5 text-[11px] text-[#6C5D64]">
+                <strong>Notice:</strong> Once finalized, the invoice receives an immutable number and line items are locked.
+              </div>
+
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowFinalizeModal(false);
+                    setFinalizeModalError('');
+                  }}
+                  disabled={isSaving}
+                  className="px-3.5 py-1.5 bg-white border border-[#E8DFDC] hover:bg-[#FAF6F5] text-[#30252A] rounded text-xs font-medium transition-all"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  onClick={executeFinalize}
+                  disabled={isSaving}
+                  className="flex items-center gap-1.5 px-4 py-1.5 bg-[#702C3B] hover:bg-[#5C222E] text-white rounded text-xs font-semibold shadow-sm transition-all disabled:opacity-50"
+                >
+                  <CheckCircle size={14} className="text-[#D4AE77]" />
+                  <span>{isSaving ? 'Finalizing...' : 'Confirm & Finalize Invoice'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

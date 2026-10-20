@@ -568,10 +568,23 @@ class DataService {
   }
 
   /**
-   * Finalize Invoice: Locks the invoice, allocates a unique invoice number atomically,
+   * Generates a preview string of the next sequential invoice number based on business settings.
+   */
+  getPreviewInvoiceNumber(settings: BusinessSettings): string {
+    const currentSeq = settings.next_sequence_number || 1;
+    const year = new Date().getFullYear().toString();
+    const seqPadded = String(currentSeq).padStart(3, '0');
+    return settings.invoice_number_format
+      .replace('{PREFIX}', settings.invoice_prefix)
+      .replace('{YEAR}', year)
+      .replace('{SEQ}', seqPadded);
+  }
+
+  /**
+   * Finalize Invoice: Locks the invoice, allocates or assigns a unique invoice number,
    * freezes historical snapshots, and prevents overwriting.
    */
-  async finalizeInvoice(invoiceId: string): Promise<Invoice> {
+  async finalizeInvoice(invoiceId: string, customInvoiceNumber?: string): Promise<Invoice> {
     const invoice = await this.getInvoiceById(invoiceId);
     if (!invoice) throw new Error(`Invoice ${invoiceId} not found`);
     if (invoice.invoice_status === 'FINALIZED' && invoice.invoice_number) {
@@ -579,41 +592,41 @@ class DataService {
     }
 
     const settings = await this.getBusinessSettings();
+    let finalNumber = customInvoiceNumber?.trim();
 
-    // Call Supabase RPC if configured
-    if (isSupabaseConfigured && supabase) {
-      try {
-        const { data: allocatedNumber, error } = await supabase.rpc(
-          'allocate_invoice_number',
-          { p_invoice_id: invoiceId }
-        );
-        if (!error && allocatedNumber) {
-          const fresh = await this.getInvoiceById(invoiceId);
-          if (fresh && fresh.invoice_number) {
-            // Ensure local storage is also updated with fresh record
-            const localInvs = getFromStorage<Invoice[]>(STORAGE_KEYS.INVOICES, []);
-            const fIdx = localInvs.findIndex((i) => i.id === invoiceId);
-            if (fIdx >= 0) localInvs[fIdx] = fresh;
-            else localInvs.unshift(fresh);
-            setToStorage(STORAGE_KEYS.INVOICES, localInvs);
-            return fresh;
+    // If no manual/custom number was provided, use sequential auto-allocation
+    if (!finalNumber) {
+      // Call Supabase RPC if configured
+      if (isSupabaseConfigured && supabase) {
+        try {
+          const { data: allocatedNumber, error } = await supabase.rpc(
+            'allocate_invoice_number',
+            { p_invoice_id: invoiceId }
+          );
+          if (!error && allocatedNumber) {
+            const fresh = await this.getInvoiceById(invoiceId);
+            if (fresh && fresh.invoice_number) {
+              const localInvs = getFromStorage<Invoice[]>(STORAGE_KEYS.INVOICES, []);
+              const fIdx = localInvs.findIndex((i) => i.id === invoiceId);
+              if (fIdx >= 0) localInvs[fIdx] = fresh;
+              else localInvs.unshift(fresh);
+              setToStorage(STORAGE_KEYS.INVOICES, localInvs);
+              return fresh;
+            }
           }
+        } catch (e) {
+          // fallback to sequential
         }
-      } catch (e) {
-        // fallback to sequential
       }
-    }
 
-    // Atomic sequence allocation
-    const currentSeq = settings.next_sequence_number || 1;
-    const year = new Date().getFullYear().toString();
-    const seqPadded = String(currentSeq).padStart(3, '0');
-    
-    // Format: VKSW/{YEAR}/{SEQ}
-    const finalNumber = settings.invoice_number_format
-      .replace('{PREFIX}', settings.invoice_prefix)
-      .replace('{YEAR}', year)
-      .replace('{SEQ}', seqPadded);
+      // Local sequential allocation
+      finalNumber = this.getPreviewInvoiceNumber(settings);
+
+      // Update settings sequence for the next invoice
+      await this.updateBusinessSettings({
+        next_sequence_number: (settings.next_sequence_number || 1) + 1,
+      });
+    }
 
     const finalized: Invoice = {
       ...invoice,
@@ -622,11 +635,6 @@ class DataService {
       finalized_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
-
-    // Update settings sequence
-    await this.updateBusinessSettings({
-      next_sequence_number: currentSeq + 1,
-    });
 
     const invoices = getFromStorage<Invoice[]>(STORAGE_KEYS.INVOICES, []);
     const idx = invoices.findIndex((i) => i.id === invoiceId);

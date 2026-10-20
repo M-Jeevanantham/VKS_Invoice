@@ -1,0 +1,109 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --primary: #702C3B;
+    --primary-container: #541626;
+    --secondary: #D4AE77;
+    --tertiary: #30252A;
+    --muted: #6C5D64;
+    --canvas: #FAF6F5;
+    --surface: #FFFFFF;
+    --threadline: #E8DFDC;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: #30252A;
+    background-color: #FAF6F5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Strict tabular numbers across all financial columns, rates, and timestamps */
+  table, .tabular-nums, input[type="number"], .font-mono, .numeric-cell {
+    font-feature-settings: "tnum" 1, "cv05" 1;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Custom scrollbars matching deep burgundy and threadline */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #FAF6F5;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #D4C2C8;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #702C3B;
+}
+
+/* ------------------------------------------------------------- */
+/* PRINT SPECIFIC STYLES: 100% GRAYSCALE A4 PORTRAIT PER PROMPT  */
+/* ------------------------------------------------------------- */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 8mm 8mm 8mm 8mm;
+  }
+
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    font-size: 11px !important;
+  }
+
+  /* Hide entire website UI, sidebars, headers, action buttons, notifications */
+  .no-print,
+  nav,
+  aside,
+  header,
+  button,
+  .action-bar,
+  .toast,
+  .modal-backdrop {
+    display: none !important;
+  }
+
+  /* Show only the invoice print container */
+  #invoice-print-root {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+  }
+
+  /* Force grayscale, remove colored borders, gradients or shadows */
+  #invoice-print-root * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  .print-page-break-inside-avoid {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .print-page-break-after-always {
+    break-after: page;
+    page-break-after: always;
+  }
+}

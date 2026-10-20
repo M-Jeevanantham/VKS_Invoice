@@ -321,7 +321,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
       return;
     }
 
-    if (!items || items.length === 0 || !items.some((i) => i.item_name.trim())) {
+    if (!items || items.length === 0 || !items.some((i) => i.item_name?.trim())) {
       setErrorMsg('Please add at least one line item with description and quantity.');
       return;
     }

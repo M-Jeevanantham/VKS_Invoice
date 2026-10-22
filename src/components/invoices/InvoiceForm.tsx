@@ -515,11 +515,10 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
                     <button
                       type="button"
                       onClick={() => setInvoiceNumberMode('auto')}
-                      className={`px-2 py-0.5 rounded text-[10px] font-medium transition-all ${
-                        invoiceNumberMode === 'auto'
-                          ? 'bg-[#702C3B] text-white shadow-xs font-semibold'
-                          : 'text-[#6C5D64] hover:text-[#30252A]'
-                      }`}
+                      className={`px-2 py-0.5 rounded text-[10px] font-medium transition-all ${invoiceNumberMode === 'auto'
+                        ? 'bg-[#702C3B] text-white shadow-xs font-semibold'
+                        : 'text-[#6C5D64] hover:text-[#30252A]'
+                        }`}
                     >
                       Auto
                     </button>
@@ -529,11 +528,10 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
                         setInvoiceNumberMode('manual');
                         if (!customInvoiceNumber) setCustomInvoiceNumber(defaultAutoNumber);
                       }}
-                      className={`px-2 py-0.5 rounded text-[10px] font-medium transition-all ${
-                        invoiceNumberMode === 'manual'
-                          ? 'bg-[#702C3B] text-white shadow-xs font-semibold'
-                          : 'text-[#6C5D64] hover:text-[#30252A]'
-                      }`}
+                      className={`px-2 py-0.5 rounded text-[10px] font-medium transition-all ${invoiceNumberMode === 'manual'
+                        ? 'bg-[#702C3B] text-white shadow-xs font-semibold'
+                        : 'text-[#6C5D64] hover:text-[#30252A]'
+                        }`}
                     >
                       Manual
                     </button>
@@ -633,8 +631,8 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
               <span className="font-semibold text-[#6C5D64]">Tax Treatment:</span>
               <span
                 className={`font-semibold px-2 py-0.5 rounded text-[10px] ${isInterstate
-                    ? 'bg-[#FDF6EC] text-[#B8741A] border border-[#F7DEB8]'
-                    : 'bg-[#EBF6F1] text-[#1E7B54] border border-[#C1E6D6]'
+                  ? 'bg-[#FDF6EC] text-[#B8741A] border border-[#F7DEB8]'
+                  : 'bg-[#EBF6F1] text-[#1E7B54] border border-[#C1E6D6]'
                   }`}
               >
                 {isInterstate ? 'IGST Applicable' : 'CGST + SGST Applicable'}
@@ -1014,7 +1012,6 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
                         <option value="BOX">BOX</option>
                         <option value="ROLL">ROLL</option>
                         <option value="ENDS">ENDS</option>
-                        <option value="ENS">ENS</option>
                       </select>
                     </td>
 
@@ -1229,11 +1226,10 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
                 {/* Option 1: Auto-generate */}
                 <label
                   onClick={() => setInvoiceNumberMode('auto')}
-                  className={`flex items-start gap-3 p-3.5 rounded-lg border cursor-pointer transition-all ${
-                    invoiceNumberMode === 'auto'
-                      ? 'border-[#702C3B] bg-[#FAF6F5] shadow-xs'
-                      : 'border-[#E8DFDC] hover:border-neutral-300'
-                  }`}
+                  className={`flex items-start gap-3 p-3.5 rounded-lg border cursor-pointer transition-all ${invoiceNumberMode === 'auto'
+                    ? 'border-[#702C3B] bg-[#FAF6F5] shadow-xs'
+                    : 'border-[#E8DFDC] hover:border-neutral-300'
+                    }`}
                 >
                   <input
                     type="radio"
@@ -1260,11 +1256,10 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
                 {/* Option 2: Enter Manually */}
                 <label
                   onClick={() => setInvoiceNumberMode('manual')}
-                  className={`flex items-start gap-3 p-3.5 rounded-lg border cursor-pointer transition-all ${
-                    invoiceNumberMode === 'manual'
-                      ? 'border-[#702C3B] bg-[#FAF6F5] shadow-xs'
-                      : 'border-[#E8DFDC] hover:border-neutral-300'
-                  }`}
+                  className={`flex items-start gap-3 p-3.5 rounded-lg border cursor-pointer transition-all ${invoiceNumberMode === 'manual'
+                    ? 'border-[#702C3B] bg-[#FAF6F5] shadow-xs'
+                    : 'border-[#E8DFDC] hover:border-neutral-300'
+                    }`}
                 >
                   <input
                     type="radio"

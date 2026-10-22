@@ -1012,6 +1012,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
                         <option value="BOX">BOX</option>
                         <option value="ROLL">ROLL</option>
                         <option value="ENDS">ENDS</option>
+                        <option value="ENS">ENS</option>
                       </select>
                     </td>
 

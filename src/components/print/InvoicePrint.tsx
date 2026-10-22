@@ -129,9 +129,39 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({ invoice, settings })
                 <p className="text-[10px] whitespace-pre-line text-neutral-900" style={{ lineHeight: '1.4', marginBottom: '4px' }}>
                   {cSnap.billing_address}
                 </p>
-                <p className="text-[10px] text-neutral-900" style={{ lineHeight: '1.4', marginBottom: '6px' }}>
-                  {cSnap.city}, {cSnap.state} - {cSnap.postal_code}
-                </p>
+                {(() => {
+                  const addr = (cSnap.billing_address || '').trim();
+                  const addrUpper = addr.toUpperCase();
+                  
+                  const pinToUse = cSnap.postal_code?.trim() || '';
+                  const cityToUse = cSnap.city?.trim() || '';
+                  const stateToUse = cSnap.state?.trim() || '';
+
+                  // If user did not provide city, state, or postal code, do not render anything!
+                  if (!cityToUse && !stateToUse && !pinToUse) {
+                    return null;
+                  }
+
+                  // If postal code, city or state are already written in billing address, avoid repeating them
+                  const pinInAddr = Boolean(pinToUse && addrUpper.includes(pinToUse.toUpperCase()));
+                  const cityInAddr = Boolean(cityToUse && addrUpper.includes(cityToUse.toUpperCase()));
+                  const stateInAddr = Boolean(stateToUse && addrUpper.includes(stateToUse.toUpperCase()));
+
+                  const parts: string[] = [];
+                  if (cityToUse && !cityInAddr) parts.push(cityToUse);
+                  if (stateToUse && !stateInAddr) parts.push(stateToUse);
+
+                  const locStr = parts.join(', ');
+                  const fullLoc = locStr + (pinToUse && !pinInAddr ? (locStr ? ` - ${pinToUse}` : pinToUse) : '');
+
+                  if (!fullLoc.trim()) return null;
+
+                  return (
+                    <p className="text-[10px] text-neutral-900" style={{ lineHeight: '1.4', marginBottom: '6px' }}>
+                      {fullLoc}
+                    </p>
+                  );
+                })()}
                 <p className="text-[10px]" style={{ marginBottom: '6px' }}>
                   <span className="font-semibold text-neutral-700">Phone:</span> {cSnap.phone}
                 </p>
@@ -139,7 +169,7 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({ invoice, settings })
                   <tbody>
                     <tr>
                       <td style={{ width: '50%', padding: '4px 2px 2px 0' }}><span className="font-semibold">GSTIN:</span> {cSnap.gstin || 'URP'}</td>
-                      <td style={{ width: '50%', padding: '4px 0 2px 2px' }}><span className="font-semibold">State Code:</span> {cSnap.state_code || '33'}</td>
+                      <td style={{ width: '50%', padding: '4px 0 2px 2px' }}><span className="font-semibold">State Code:</span> {cSnap.state_code || '—'}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -207,6 +237,12 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({ invoice, settings })
                       <td style={{ width: '50%', padding: '2px 0 2px 4px', verticalAlign: 'top', lineHeight: '1.4' }}>
                         <span className="font-semibold text-neutral-700">L.R. Date:</span>{' '}
                         <span>{invoice.transport_date || '—'}</span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td colSpan={2} style={{ padding: '2px 0 2px 0', verticalAlign: 'top', lineHeight: '1.4' }}>
+                        <span className="font-semibold text-neutral-700">E-way Bill Ref No:</span>{' '}
+                        <span className="font-medium">{invoice.eway_bill_number || '—'}</span>
                       </td>
                     </tr>
                   </tbody>

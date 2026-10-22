@@ -5,7 +5,7 @@
 export type InvoiceStatus = 'DRAFT' | 'FINALIZED' | 'CANCELLED';
 export type PaymentStatus = 'UNPAID' | 'PARTIALLY_PAID' | 'PAID';
 export type PaymentMethod = 'BANK_TRANSFER' | 'CASH' | 'UPI' | 'CHEQUE';
-export type ProductUnit = 'KG' | 'MTR' | 'PCS' | 'BOX' | 'ROLL';
+export type ProductUnit = 'KG' | 'MTR' | 'PCS' | 'BOX' | 'ROLL' | 'ENS' | 'ENDS';
 
 export interface BusinessSettings {
   id: string;
@@ -194,6 +194,7 @@ export interface Invoice {
   vehicle_number?: string;
   lr_number?: string;
   transport_date?: string;
+  eway_bill_number?: string;
   
   items: InvoiceItem[];
   

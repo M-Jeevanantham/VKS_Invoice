@@ -47,8 +47,8 @@ export const CustomerList: React.FC<CustomerListProps> = ({
   const [billingAddress, setBillingAddress] = useState('');
   const [shippingAddress, setShippingAddress] = useState('');
   const [city, setCity] = useState('');
-  const [state, setState] = useState('Tamil Nadu');
-  const [stateCode, setStateCode] = useState('33');
+  const [state, setState] = useState('');
+  const [stateCode, setStateCode] = useState('');
   const [postalCode, setPostalCode] = useState('');
   const [notes, setNotes] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -64,10 +64,10 @@ export const CustomerList: React.FC<CustomerListProps> = ({
     setPan('');
     setBillingAddress('');
     setShippingAddress('');
-    setCity('Salem');
-    setState('Tamil Nadu');
-    setStateCode('33');
-    setPostalCode('636001');
+    setCity('');
+    setState('');
+    setStateCode('');
+    setPostalCode('');
     setNotes('');
     setErrorMsg('');
     setIsModalOpen(true);
@@ -262,7 +262,8 @@ export const CustomerList: React.FC<CustomerListProps> = ({
                   <div className="flex items-start gap-2">
                     <MapPin size={13} className="text-[#702C3B] flex-shrink-0 mt-0.5" />
                     <span className="line-clamp-2">
-                      {c.billing_address}, {c.city} - {c.postal_code}
+                      {c.billing_address}
+                      {c.city || c.postal_code ? ` (${[c.city, c.postal_code].filter(Boolean).join(' - ')})` : ''}
                     </span>
                   </div>
                   {c.gstin && (
@@ -483,7 +484,14 @@ export const CustomerList: React.FC<CustomerListProps> = ({
                   required
                   placeholder="Door No, Street, Colony..."
                   value={billingAddress}
-                  onChange={(e) => setBillingAddress(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setBillingAddress(val);
+                    if (!postalCode || postalCode === '636001') {
+                      const pinMatch = val.match(/\b(6\d{5})\b/);
+                      if (pinMatch) setPostalCode(pinMatch[1]);
+                    }
+                  }}
                   className="w-full px-3 py-1.5 bg-white border border-[#E8DFDC] rounded text-xs focus:outline-none focus:border-[#702C3B]"
                 />
               </div>
@@ -501,20 +509,32 @@ export const CustomerList: React.FC<CustomerListProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <div>
                   <label className="block text-[10px] font-semibold text-[#6C5D64] mb-1">City</label>
                   <input
                     type="text"
+                    placeholder="e.g. Salem"
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
                     className="w-full px-2 py-1 bg-white border border-[#E8DFDC] rounded text-xs"
                   />
                 </div>
                 <div>
+                  <label className="block text-[10px] font-semibold text-[#6C5D64] mb-1">PIN Code</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 637504"
+                    value={postalCode}
+                    onChange={(e) => setPostalCode(e.target.value)}
+                    className="w-full px-2 py-1 bg-white border border-[#E8DFDC] rounded text-xs font-mono"
+                  />
+                </div>
+                <div>
                   <label className="block text-[10px] font-semibold text-[#6C5D64] mb-1">State</label>
                   <input
                     type="text"
+                    placeholder="e.g. Tamil Nadu"
                     value={state}
                     onChange={(e) => setState(e.target.value)}
                     className="w-full px-2 py-1 bg-white border border-[#E8DFDC] rounded text-xs"
@@ -524,6 +544,7 @@ export const CustomerList: React.FC<CustomerListProps> = ({
                   <label className="block text-[10px] font-semibold text-[#6C5D64] mb-1">State Code</label>
                   <input
                     type="text"
+                    placeholder="33"
                     value={stateCode}
                     onChange={(e) => setStateCode(e.target.value)}
                     className="w-full px-2 py-1 bg-white border border-[#E8DFDC] rounded text-xs font-mono"

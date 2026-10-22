@@ -328,6 +328,8 @@ export const ProductList: React.FC<ProductListProps> = ({
                     <option value="PCS">Pieces (PCS)</option>
                     <option value="BOX">Boxes (BOX)</option>
                     <option value="ROLL">Rolls (ROLL)</option>
+                    <option value="ENDS">Ends / Warp Ends (ENDS)</option>
+                    <option value="ENS">Ends / Warp Ends (ENS)</option>
                   </select>
                 </div>
               </div>

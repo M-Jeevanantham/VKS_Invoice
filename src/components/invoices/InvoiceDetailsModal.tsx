@@ -263,10 +263,14 @@ export const InvoiceDetailsModal: React.FC<InvoiceDetailsModalProps> = ({
                     <p className="text-neutral-700 mt-1">
                       {invoice.customer_snapshot.billing_address}
                     </p>
-                    <p className="text-neutral-700">
-                      {invoice.customer_snapshot.city}, {invoice.customer_snapshot.state} -{' '}
-                      {invoice.customer_snapshot.postal_code}
-                    </p>
+                    {(() => {
+                      const parts: string[] = [];
+                      if (invoice.customer_snapshot.city) parts.push(invoice.customer_snapshot.city);
+                      if (invoice.customer_snapshot.state) parts.push(invoice.customer_snapshot.state);
+                      const loc = parts.join(', ');
+                      const full = loc + (invoice.customer_snapshot.postal_code ? ` - ${invoice.customer_snapshot.postal_code}` : '');
+                      return full ? <p className="text-neutral-700">{full}</p> : null;
+                    })()}
                     <div className="mt-2 pt-2 border-t border-[#E8DFDC] flex justify-between">
                       <span>Phone: {invoice.customer_snapshot.phone}</span>
                       <span className="font-mono font-semibold">
@@ -304,6 +308,10 @@ export const InvoiceDetailsModal: React.FC<InvoiceDetailsModalProps> = ({
                     <div>
                       <span className="text-[#6C5D64]">Delivery Challan No: </span>
                       <span className="font-mono">{invoice.dc_number || '—'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[#6C5D64]">E-way Bill Ref No: </span>
+                      <span className="font-mono font-medium text-[#30252A]">{invoice.eway_bill_number || '—'}</span>
                     </div>
                   </div>
                 </div>

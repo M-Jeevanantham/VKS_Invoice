@@ -454,6 +454,7 @@ class DataService {
       vehicle_number: invoiceData.vehicle_number || '',
       lr_number: invoiceData.lr_number || '',
       transport_date: invoiceData.transport_date || '',
+      eway_bill_number: invoiceData.eway_bill_number || '',
       items: calculatedTotals.calculatedItems,
       subtotal: calculatedTotals.subtotal,
       discount_total: calculatedTotals.discount_total,

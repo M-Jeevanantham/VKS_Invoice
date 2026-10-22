@@ -94,9 +94,9 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
     initialInvoice?.customer_snapshot.billing_address || ''
   );
   const [city, setCity] = useState(initialInvoice?.customer_snapshot.city || '');
-  const [state, setState] = useState(initialInvoice?.customer_snapshot.state || 'Tamil Nadu');
+  const [state, setState] = useState(initialInvoice?.customer_snapshot.state || '');
   const [stateCode, setStateCode] = useState(
-    initialInvoice?.customer_snapshot.state_code || '33'
+    initialInvoice?.customer_snapshot.state_code || ''
   );
   const [postalCode, setPostalCode] = useState(
     initialInvoice?.customer_snapshot.postal_code || ''
@@ -125,6 +125,9 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
   const [lrNumber, setLrNumber] = useState(initialInvoice?.lr_number || '');
   const [transportDate, setTransportDate] = useState(
     initialInvoice?.transport_date || ''
+  );
+  const [ewayBillNumber, setEwayBillNumber] = useState(
+    initialInvoice?.eway_bill_number || ''
   );
 
   // Line items
@@ -170,10 +173,18 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
       setEmail(found.email || '');
       setGstin(found.gstin || '');
       setBillingAddress(found.billing_address);
-      setCity(found.city);
-      setState(found.state);
-      setStateCode(found.state_code);
-      setPostalCode(found.postal_code);
+
+      // Smart PIN code extraction: if found.postal_code is empty or 636001, but billing_address contains a 6-digit PIN
+      let custPostal = found.postal_code || '';
+      const pinMatch = (found.billing_address || '').match(/\b(6\d{5})\b/);
+      if (pinMatch && (!custPostal || custPostal === '636001')) {
+        custPostal = pinMatch[1];
+      }
+
+      setCity(found.city || '');
+      setState(found.state || '');
+      setStateCode(found.state_code || '');
+      setPostalCode(custPostal || '');
 
       if (found.shipping_address) {
         setShippingAddress(found.shipping_address);
@@ -278,6 +289,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
       vehicle_number: vehicleNumber,
       lr_number: lrNumber,
       transport_date: transportDate,
+      eway_bill_number: ewayBillNumber,
       items: totals.calculatedItems,
       subtotal: totals.subtotal,
       discount_total: totals.discount_total,
@@ -710,25 +722,44 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
                 rows={2}
                 placeholder="Street address, colony, landmark..."
                 value={billingAddress}
-                onChange={(e) => setBillingAddress(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setBillingAddress(val);
+                  if (!postalCode || postalCode === '636001') {
+                    const pinMatch = val.match(/\b(6\d{5})\b/);
+                    if (pinMatch) setPostalCode(pinMatch[1]);
+                  }
+                }}
                 className="w-full px-3 py-1.5 bg-white border border-[#E8DFDC] rounded text-[#30252A] focus:outline-none focus:border-[#702C3B]"
               />
             </div>
 
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <div>
                 <label className="block text-[10px] font-semibold text-[#6C5D64] mb-1">City</label>
                 <input
                   type="text"
+                  placeholder="e.g. Salem"
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
                   className="w-full px-2 py-1 bg-white border border-[#E8DFDC] rounded text-xs"
                 />
               </div>
               <div>
+                <label className="block text-[10px] font-semibold text-[#6C5D64] mb-1">PIN Code</label>
+                <input
+                  type="text"
+                  placeholder="e.g. 637504"
+                  value={postalCode}
+                  onChange={(e) => setPostalCode(e.target.value)}
+                  className="w-full px-2 py-1 bg-white border border-[#E8DFDC] rounded text-xs font-mono"
+                />
+              </div>
+              <div>
                 <label className="block text-[10px] font-semibold text-[#6C5D64] mb-1">State</label>
                 <input
                   type="text"
+                  placeholder="e.g. Tamil Nadu"
                   value={state}
                   onChange={(e) => setState(e.target.value)}
                   className="w-full px-2 py-1 bg-white border border-[#E8DFDC] rounded text-xs"
@@ -738,6 +769,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
                 <label className="block text-[10px] font-semibold text-[#6C5D64] mb-1">State Code</label>
                 <input
                   type="text"
+                  placeholder="33"
                   value={stateCode}
                   onChange={(e) => setStateCode(e.target.value)}
                   className="w-full px-2 py-1 bg-white border border-[#E8DFDC] rounded text-xs font-mono"
@@ -856,6 +888,19 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
                   />
                 </div>
               </div>
+
+              <div>
+                <label className="block text-[10px] font-semibold text-[#6C5D64] mb-1">
+                  E-way Bill Reference Number
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. 2412 3456 7890 or Ref #"
+                  value={ewayBillNumber}
+                  onChange={(e) => setEwayBillNumber(e.target.value)}
+                  className="w-full px-2 py-1 bg-white border border-[#E8DFDC] rounded text-xs font-mono"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -968,6 +1013,8 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
                         <option value="PCS">PCS</option>
                         <option value="BOX">BOX</option>
                         <option value="ROLL">ROLL</option>
+                        <option value="ENDS">ENDS</option>
+                        <option value="ENS">ENS</option>
                       </select>
                     </td>
 
